@@ -10,6 +10,18 @@ environment:
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
+    # Tweak builds where Python 3.11 is installed
+
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      PYTHON: "C:\\Python311-x64"
+      PYTHON_VERSION: "3.11.0b5"
+      PYTHON_ARCH: "64"
+
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      PYTHON: "C:\\Python311"
+      PYTHON_VERSION: "3.11.0b5"
+      PYTHON_ARCH: "32"
+
     # Tweak builds where Python 3.10 is installed
 
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
