@@ -1,0 +1,101 @@
+# OpenGL package build/test/release CI configuration
+
+name: PyOpenGL package CI
+on:
+  - push
+  - release
+
+jobs:
+
+  test:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        python-version:
+          - '3.6'
+          - '3.7'
+          - '3.8'
+          - '3.9'
+          - '3.10'
+          - 3.11-dev
+          - pypy-3.8
+        python-architecture:
+          - x64
+          - x86
+
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.python-architecture }}
+          cache: pip
+
+      - name: update pip
+        run: pip install --upgrade pip
+
+      - name: install package
+        run: pip install .
+
+      - name: install test dependencies
+        run: pip install numpy pygame pytest
+
+      - name: run test suite
+        run: pytest -vvra tests
+
+  release:
+    needs: test
+    if: github.event == 'release'
+
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        python-version:
+          - '3.6'
+          - '3.7'
+          - '3.8'
+          - '3.9'
+          - '3.10'
+          - 3.11-dev
+          - pypy-3.8
+        python-architecture:
+          - x64
+          - x86
+
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.python-architecture }}
+          cache: pip
+
+      - name: update pip
+        run: pip install --upgrade pip
+
+      - name: install build
+        run: pip install build
+
+      - name: build package
+        run: python -m build --outdir dist .
+
+      - name: build accelerate package
+        run: python -m build --outdir dist accelerate
+
+      - name: publish package
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
