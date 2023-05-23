@@ -1,5 +1,4 @@
 environment:
-
   global:
     # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
     # /E:ON and /V:ON options are not enabled in the batch script intepreter
@@ -7,11 +6,59 @@ environment:
     WITH_COMPILER: "cmd /E:ON /V:ON /C ..\\appveyor\\run_with_compiler.cmd"
 
   matrix:
-
     # Pre-installed Python versions, which Appveyor may upgrade to
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
-    
+
+    # Tweak builds where Python 3.10 is installed
+
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      PYTHON: "C:\\Python310-x64"
+      PYTHON_VERSION: "3.10.2"
+      PYTHON_ARCH: "64"
+
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
+      PYTHON: "C:\\Python310"
+      PYTHON_VERSION: "3.10.2"
+      PYTHON_ARCH: "64"
+
+    # The tweak builds on the image where Python3.9 compatible compiler is available
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      PYTHON: "C:\\Python39"
+      PYTHON_VERSION: "3.9.10"
+      PYTHON_ARCH: "32"
+
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      PYTHON: "C:\\Python39-x64"
+      PYTHON_VERSION: "3.9.10"
+      PYTHON_ARCH: "64"
+
+    # Older Python's that can be built with the default windows images...
+
+    - PYTHON: "C:\\Python36"
+      PYTHON_VERSION: "3.6.4"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python36-x64"
+      PYTHON_VERSION: "3.6.4"
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:\\Python37"
+      PYTHON_VERSION: "3.7.0"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python37-x64"
+      PYTHON_VERSION: "3.7.0"
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:\\Python38"
+      PYTHON_VERSION: "3.8.0"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python38-x64"
+      PYTHON_VERSION: "3.8.0"
+      PYTHON_ARCH: "64"
+
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.14"
       PYTHON_ARCH: "32"
@@ -20,77 +67,43 @@ environment:
       PYTHON_VERSION: "2.7.14"
       PYTHON_ARCH: "64"
 
-    - PYTHON: "C:\\Python34"
-      PYTHON_VERSION: "3.4.4"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python34-x64"
-      PYTHON_VERSION: "3.4.4"
-      PYTHON_ARCH: "64"
-
-    - PYTHON: "C:\\Python26"
-      PYTHON_VERSION: "2.6.6"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python26-x64"
-      PYTHON_VERSION: "2.6.6"
-      PYTHON_ARCH: "64"
-
     - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5.3"
       PYTHON_ARCH: "32"
 
     - PYTHON: "C:\\Python35-x64"
       PYTHON_VERSION: "3.5.3"
-      PYTHON_ARCH: "64"    
-
-    - PYTHON: "C:\\Python36"
-      PYTHON_VERSION: "3.6.4"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python36-x64"
-      PYTHON_VERSION: "3.6.4"
-      PYTHON_ARCH: "64"    
-
-    - PYTHON: "C:\\Python37"
-      PYTHON_VERSION: "3.7.0"
-      PYTHON_ARCH: "32"
-
-    - PYTHON: "C:\\Python37-x64"
-      PYTHON_VERSION: "3.7.0"
-      PYTHON_ARCH: "64"    
+      PYTHON_ARCH: "64"
 
 branches:
+  only:
+    - master
 
-    only:
-        - master
-    
 init:
   - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
 
 install:
   - "powershell appveyor\\install.ps1"
-  - "%CMD_IN_ENV% python setup.py install"
+  - "%CMD_IN_ENV% %PYTHON%\\python.exe -m pip install --prefer-binary pygame pytest numpy"
+  - "%CMD_IN_ENV% %PYTHON%\\python.exe -m pip install ."
   - cd accelerate
-  - "%CMD_IN_ENV% python setup.py install"
+  - "%CMD_IN_ENV% %PYTHON%\\python.exe -m pip install ."
   - cd ..
 
-build: off
+build_script:
+  - cd accelerate
+  - "%PYTHON%\\python.exe -m pip install build"
+  - "ECHO %WITH_COMPILER% %PYTHON%/python.exe -m build ."
+  - "%WITH_COMPILER% %PYTHON%/python.exe -m build ."
+  - cd ..
 
 test_script:
-  - "ECHO pytest tests not being run"
-
-after_test:
-  - cd accelerate
-  - "ECHO %WITH_COMPILER% %PYTHON%/python.exe setup.py bdist_wheel"
-  - "%WITH_COMPILER% %PYTHON%/python.exe setup.py bdist_wheel"
-  - cd ..
+  - "%CMD_IN_ENV% %PYTHON%/python.exe -m pytest -sv tests/test_core.py"
 
 artifacts:
   - path: accelerate\dist\*
     name: dist-accel
   - path: dist\*
     name: dist
-  
 #on_success:
 #  - TODO: upload the content of dist/*.whl to a public wheelhouse

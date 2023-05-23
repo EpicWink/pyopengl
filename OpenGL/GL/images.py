@@ -69,6 +69,7 @@ images.COMPONENT_COUNTS.update( {
 } )
 
 images.TYPE_TO_ARRAYTYPE.update( {
+    GL_3_0.GL_HALF_FLOAT : GL_3_0.GL_HALF_FLOAT,
     GL_1_2.GL_UNSIGNED_BYTE_3_3_2 : GL_1_1.GL_UNSIGNED_BYTE,
     GL_1_2.GL_UNSIGNED_BYTE_2_3_3_REV : GL_1_1.GL_UNSIGNED_BYTE,
     GL_1_2.GL_UNSIGNED_SHORT_4_4_4_4 : GL_1_1.GL_UNSIGNED_SHORT,
@@ -235,7 +236,7 @@ def _get_texture_level_dims(target,level):
         GL_1_1.glGetTexLevelParameteriv( target, level, GL_1_1.GL_TEXTURE_HEIGHT, dim )
         dims.append( dim.value )
         if target != GL_1_1.GL_TEXTURE_2D:
-            GL_1_1.glGetTexLevelParameteriv( target, level, GL_1_1.GL_TEXTURE_DEPTH, dim )
+            GL_1_1.glGetTexLevelParameteriv( target, level, GL_1_2.GL_TEXTURE_DEPTH, dim )
             dims.append( dim.value )
     return dims
 
@@ -575,39 +576,30 @@ def typedImageFunction( suffix, arrayConstant,  baseFunction ):
     """Produce a typed version of the given image function"""
     functionName = baseFunction.__name__
     functionName = '%(functionName)s%(suffix)s'%locals()
-    if baseFunction:
-        arrayType = arrays.GL_CONSTANT_TO_ARRAY_TYPE[ arrayConstant ]
-        function = setDimensionsAsInts(
-            setImageInput(
-                baseFunction,
-                arrayType,
-                typeName = arrayConstant,
-            )
+    arrayType = arrays.GL_CONSTANT_TO_ARRAY_TYPE[ arrayConstant ]
+    function = setDimensionsAsInts(
+        setImageInput(
+            baseFunction,
+            arrayType,
+            typeName = arrayConstant,
         )
-        return functionName, function
-    else:
-        return functionName, baseFunction
+    )
+    return functionName, function
 
 def _setDataSize( baseFunction, argument='imageSize' ):
     """Set the data-size value to come from the data field"""
-    if baseFunction:
-        converter = CompressedImageConverter()
-        return asWrapper( baseFunction ).setPyConverter(
-            argument
-        ).setCConverter( argument, converter )
-    else:
-        return baseFunction
+    converter = CompressedImageConverter()
+    return asWrapper( baseFunction ).setPyConverter(
+        argument
+    ).setCConverter( argument, converter )
 
 def compressedImageFunction( baseFunction ):
     """Set the imageSize and dimensions-as-ints converters for baseFunction"""
-    if baseFunction:
-        return setDimensionsAsInts(
-            _setDataSize(
-                baseFunction, argument='imageSize'
-            )
+    return setDimensionsAsInts(
+        _setDataSize(
+            baseFunction, argument='imageSize'
         )
-    else:
-        return baseFunction
+    )
 
 for suffix,arrayConstant in [
     ('b', GL_1_1.GL_BYTE),

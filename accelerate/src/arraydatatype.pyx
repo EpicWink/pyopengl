@@ -303,7 +303,7 @@ cdef class Output(cArgConverter):
         if thisSize == (1,):
             try:
                 return result[0]
-            except TypeError as err:
+            except (IndexError,TypeError) as err:
                 return result
         else:
             return result
@@ -344,8 +344,8 @@ cdef class SizedOutput( Output ):
                 if not isinstance( result, tuple ):
                     result = (result,)
                 return result
-            except KeyError as err:
-                raise KeyError( """Unknown specifier %s (lookup = %s)"""%( specifier, self.lookup ))
+            except (TypeError,KeyError) as err:
+                raise KeyError( """Unknown specifier %r (lookup = %s)"""%( specifier, self.lookup ))
 DO_OUTPUT = (None,_NULL)
 cdef class SizedOutputOrInput( SizedOutput ):
     cdef object c_call( self, tuple pyArgs, int index, object baseOperation ):

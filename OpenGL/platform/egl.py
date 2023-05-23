@@ -31,11 +31,15 @@ class EGLPlatform( baseplatform.BasePlatform ):
     @baseplatform.lazy_property
     def GL(self):
         try:
-            return ctypesloader.loadLibrary(
-                ctypes.cdll,
-                'GL', 
-                mode=ctypes.RTLD_GLOBAL 
-            )
+            for name in ('OpenGL','GL'):
+                lib = ctypesloader.loadLibrary(
+                    ctypes.cdll,
+                    name, 
+                    mode=ctypes.RTLD_GLOBAL 
+                )
+                if lib:
+                    return lib 
+            raise OSError("No GL/OpenGL library available")
         except OSError:
             return self.GLES2 or self.GLES1
     @baseplatform.lazy_property
@@ -100,3 +104,19 @@ class EGLPlatform( baseplatform.BasePlatform ):
     @baseplatform.lazy_property
     def GetCurrentContext( self ):
         return self.EGL.eglGetCurrentContext
+
+    def getGLUTFontPointer( self, constant ):
+        """Platform specific function to retrieve a GLUT font pointer
+
+        GLUTAPI void *glutBitmap9By15;
+        #define GLUT_BITMAP_9_BY_15		(&glutBitmap9By15)
+
+        Key here is that we want the addressof the pointer in the DLL,
+        not the pointer in the DLL.  That is, our pointer is to the
+        pointer defined in the DLL, we don't want the *value* stored in
+        that pointer.
+        """
+        name = [ x.title() for x in constant.split( '_' )[1:] ]
+        internal = 'glut' + "".join( [x.title() for x in name] )
+        pointer = ctypes.c_void_p.in_dll( self.GLUT, internal )
+        return ctypes.c_void_p(ctypes.addressof(pointer))
